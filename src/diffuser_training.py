@@ -1216,7 +1216,15 @@ def main(args):
                 if global_step % args.save_steps == 0:
                     if accelerator.is_main_process:
                         save_path = os.path.join(args.output_dir, f"checkpoint-{global_step}")
-                        accelerator.save_state(save_path)
+                        save_progress(text_encoder, unet, modifier_token_id, accelerator, args, save_path)
+                        if args.train_text_encoder or args.modifier_token is not None:
+                            unet, text_encoder, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+                                unet, text_encoder, optimizer, train_dataloader, lr_scheduler
+                            )
+                        else:
+                            unet, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
+                                unet, optimizer, train_dataloader, lr_scheduler
+                            )
 
             logs = {"loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
             progress_bar.set_postfix(**logs)
